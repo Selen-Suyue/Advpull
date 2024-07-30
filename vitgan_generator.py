@@ -505,28 +505,29 @@ def main():
 if __name__=="__main__":
     model=torch.load("generator.pt")
     batch=1
-    z = torch.randn(batch,model.mlp.z_dim).cuda()
-    print(z.size())
-    model=model.cuda()
-    output = model(z)
-    output=output.permute(0,2,1).contiguous()
-    tensor=output.view(batch,80,80,3)
-    tensor = (tensor + 1) / 2 * 255
-    tensor = torch.clamp(tensor, 0, 255)
-    tensor = tensor.type(torch.uint8)
-    numpy_array = tensor.cpu().numpy()
-    for i in range(numpy_array.shape[0]):
-        # img = Image.fromarray(numpy_array[i].astype(np.uint8), 'RGB')
-        img = cv2.cvtColor(numpy_array[i], cv2.COLOR_RGB2BGR)
-        Z = img.reshape((-1, 3))
-        Z = np.float32(Z)
-        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-        K = 3
-        ret, label, center = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-        center = np.uint8(center)
-        res = center[label.flatten()]
-        img_segmented = res.reshape(img.shape)
-        img_uniform = cv2.cvtColor(img_segmented, cv2.COLOR_BGR2RGB)
-        plt.imshow(img_uniform)
-        plt.axis('off')
-        plt.show()
+    #the code below are only a sample, z denotes the feature we will use
+    # z = torch.randn(batch,model.mlp.z_dim).cuda()
+    # print(z.size())
+    # model=model.cuda()
+    # output = model(z)
+    # output=output.permute(0,2,1).contiguous()
+    # tensor=output.view(batch,80,80,3)
+    # tensor = (tensor + 1) / 2 * 255
+    # tensor = torch.clamp(tensor, 0, 255)
+    # tensor = tensor.type(torch.uint8)
+    # numpy_array = tensor.cpu().numpy()
+    # for i in range(numpy_array.shape[0]):
+    #     # img = Image.fromarray(numpy_array[i].astype(np.uint8), 'RGB')
+    #     img = cv2.cvtColor(numpy_array[i], cv2.COLOR_RGB2BGR)
+    #     Z = img.reshape((-1, 3))
+    #     Z = np.float32(Z)
+    #     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    #     K = 3
+    #     ret, label, center = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+    #     center = np.uint8(center)
+    #     res = center[label.flatten()]
+    #     img_segmented = res.reshape(img.shape)
+    #     img_uniform = cv2.cvtColor(img_segmented, cv2.COLOR_BGR2RGB)
+    #     plt.imshow(img_uniform)
+    #     plt.axis('off')
+    #     plt.show()
