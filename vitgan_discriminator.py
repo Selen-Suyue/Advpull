@@ -40,7 +40,7 @@ generator=generator.to(device)
 criterion = nn.L1Loss()
 optimizer = optim.Adam(generator.parameters(),lr=0.00001)
 
-# 训练函数
+
 def train(epochs=100):
     for epoch in range(epochs):
         total_loss = 0
@@ -55,12 +55,12 @@ def train(epochs=100):
             img = output.view(1, 3,80,80)
             x2 = edge_detection_model(img)
 
-            # 从 cam6 加载图像并提取特征
+      
             cam6_dataset = Edge_extract.CustomDataset("SYSU", "cam6", i, transform=transform)
             cam6_image = cam6_dataset[0].unsqueeze(0).to(device)
             x3 = edge_detection_model(cam6_image)
 
-            # 计算损失
+    
             loss_cam1 = criterion(x2, x1)
             loss_cam6 = criterion(x2, x3)
             loss = -(loss_cam1 + loss_cam6)
