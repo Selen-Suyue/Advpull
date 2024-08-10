@@ -206,7 +206,6 @@ def train_network(network, dataset_path, epochs=1000):
                 if cam_id == 'cam2':
                     cam1_centers = cluster_centers
                 else:
-                    # 计算cam1和cam6的聚类中心之间的距离
                     distance = calculate_distance(cam1_centers,
                                                   cluster_centers)
                     total_loss = total_loss + distance
