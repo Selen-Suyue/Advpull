@@ -468,66 +468,66 @@ class GeneratorViT(nn.Module):
         
 
 
-def main():
-    model = GeneratorViT(
-        style_mlp_layers=8,
-        patch_size=4,
-        latent_dim=32,
-        hidden_size=384,
-        image_size=80,
-        depth=4,
-        combine_patch_embeddings=False,
-        combined_embedding_size=1024,
-        forward_drop_p=0.0,
-        bias=False,
-        out_features=3,
-        out_patch_size=4,
-        weight_modulation=True,
-        siren_hidden_layers=1
-    )
-    batch=1
-    z = torch.randn(batch,model.mlp.z_dim).cuda()
-    print(z.size())
-    model=model.cuda()
+transform1 = TF.Compose([
+    TF.CenterCrop((80, 80)),
+    TF.ToTensor(),
+    ])
+
+def process_image(image_path,model,model1):
+    device = torch.device('cuda:1')  
+    model1=model1.to(device)
+    model = model.to(device) 
+    image = Image.open(image_path)
+    image.show()
+    img=transform1(image)
+    img=img.to(device)
+    img=img.unsqueeze(0)
+    z = model1(img)
     output = model(z)
-    output=output.permute(0,2,1).contiguous()
-    tensor=output.view(batch,80,80,3)
+    output = output.permute(0, 2, 1).contiguous()
+    tensor = output.view(1, 80, 80, 3)
     tensor = (tensor + 1) / 2 * 255
     tensor = torch.clamp(tensor, 0, 255)
     tensor = tensor.type(torch.uint8)
-    numpy_array = tensor.cpu().numpy()
-    for i in range(numpy_array.shape[0]):
-        img = Image.fromarray(numpy_array[i].astype(np.uint8), 'RGB')
-        plt.imshow(img)
-        plt.axis('off')
-        plt.show()
+    numpy_array = tensor.cpu().numpy() 
+    img = cv2.cvtColor(numpy_array[0], cv2.COLOR_RGB2BGR)
+    Z = img.reshape((-1, 3))
+    Z = np.float32(Z)
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    K = 4
+    _, label, center = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+    center = np.uint8(center)
+    res = center[label.flatten()]
+    img_segmented = res.reshape(img.shape)
+    img_uniform = cv2.cvtColor(img_segmented, cv2.COLOR_BGR2RGB)
+    img_uniform = cv2.resize(img_uniform, (image.size[0], image.size[1]), interpolation=cv2.INTER_AREA)
+    combined_image = cv2.addWeighted(image, 1, img_uniform, 1,0)
+    combined_image = Image.fromarray(combined_image)
 
-if __name__=="__main__":
-    model=torch.load("generator.pt")
-    batch=1
-    #the code below are only a sample, z denotes the feature we will use
-    # z = torch.randn(batch,model.mlp.z_dim).cuda()
-    # print(z.size())
-    # model=model.cuda()
-    # output = model(z)
-    # output=output.permute(0,2,1).contiguous()
-    # tensor=output.view(batch,80,80,3)
-    # tensor = (tensor + 1) / 2 * 255
-    # tensor = torch.clamp(tensor, 0, 255)
-    # tensor = tensor.type(torch.uint8)
-    # numpy_array = tensor.cpu().numpy()
-    # for i in range(numpy_array.shape[0]):
-    #     # img = Image.fromarray(numpy_array[i].astype(np.uint8), 'RGB')
-    #     img = cv2.cvtColor(numpy_array[i], cv2.COLOR_RGB2BGR)
-    #     Z = img.reshape((-1, 3))
-    #     Z = np.float32(Z)
-    #     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    #     K = 3
-    #     ret, label, center = cv2.kmeans(Z, K, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-    #     center = np.uint8(center)
-    #     res = center[label.flatten()]
-    #     img_segmented = res.reshape(img.shape)
-    #     img_uniform = cv2.cvtColor(img_segmented, cv2.COLOR_BGR2RGB)
-    #     plt.imshow(img_uniform)
-    #     plt.axis('off')
-    #     plt.show()
+    return combined_image
+
+def save_image(output_path, image):
+    image.save(output_path)
+
+def process_directory(root_dir,model,model1):
+    print(root_dir)
+    for _, dirs, _ in os.walk(root_dir):
+     for dir in dirs:
+         id_path= os.path.join(root_dir, dir) 
+         for _,_,files in os.walk(id_path):
+            for file in files:
+                if file.endswith(".bmp"):
+                    image_path = os.path.join(id_path, file)
+                    processed_image = process_image(image_path,model,model1)
+                    save_image(image_path, processed_image)
+                
+            print(dir+" yet")   
+if __name__=='__main__':
+    model=torch.load('generator.pt')
+    model1 = torch.load("edge_detection_model.pt")
+    device = torch.device('cuda:1')
+    model = model.to(device)
+    model1=model1.to(device)
+    root_dir = "../DEEN/Datasets/RegDB/Visible"
+    process_directory(root_dir,model,model1)
+
